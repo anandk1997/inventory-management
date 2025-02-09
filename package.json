@@ -7,8 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "push": "supabase db push",
+    "preview": "vite preview --host",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:push": "supabase db push",
+    "compose:up": "docker compose up --build",
+    "compose:watch": "docker compose watch",
     "format": "prettier --write ."
   },
   "dependencies": {

@@ -100,35 +100,26 @@ ALTER TABLE
 CREATE POLICY "Allow authenticated users to create and view transactions" ON inventory_transactions FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Function to update product quantity
-CREATE
-OR REPLACE FUNCTION update_product_quantity() RETURNS TRIGGER AS $ $ BEGIN IF NEW.type = 'IN' THEN
-UPDATE
-    products
-SET
-    quantity = quantity + NEW.quantity,
-    updated_at = now()
-WHERE
-    id = NEW.product_id;
+CREATE OR REPLACE FUNCTION update_product_quantity() RETURNS TRIGGER AS $$ 
+BEGIN
+    IF NEW.type = 'IN' THEN
+        UPDATE products
+        SET quantity = quantity + NEW.quantity,
+            updated_at = now()
+        WHERE id = NEW.product_id;
+    
+    ELSIF NEW.type = 'OUT' THEN
+        UPDATE products
+        SET quantity = quantity - NEW.quantity,
+            updated_at = now()
+        WHERE id = NEW.product_id;
+    END IF;
 
-ELSIF NEW.type = 'OUT' THEN
-UPDATE
-    products
-SET
-    quantity = quantity - NEW.quantity,
-    updated_at = now()
-WHERE
-    id = NEW.product_id;
-
-END IF;
-
-RETURN NEW;
-
+    RETURN NEW;
 END;
-
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Trigger to update product quantity on transaction
 CREATE TRIGGER update_product_quantity_trigger
-AFTER
-INSERT
+AFTER INSERT
     ON inventory_transactions FOR EACH ROW EXECUTE FUNCTION update_product_quantity();
