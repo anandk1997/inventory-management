@@ -40,6 +40,7 @@ CREATE TABLE users (
     first_name text,
     last_name text,
     email text UNIQUE NOT NULL,
+    password text,
     phone text,
     address text,
     created_at timestamptz DEFAULT now(),

@@ -4,6 +4,7 @@ import { Package } from "lucide-react";
 import { useState } from "react";
 import classNames from "classnames";
 import { useAppSelector } from "src/store";
+import { CircularProgress } from "@mui/material";
 
 const ChangePassword = () => {
   const [password, setPassword] = useState("");
@@ -136,9 +137,21 @@ const ChangePassword = () => {
             <button
               type="submit"
               disabled={isPending}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="group relative w-full h-10 flex justify-center items-center gap-2 py-2 px-4 border border-transparent text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-white hover:!text-indigo-600 hover:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer"
             >
-              {isPending ? "Loading" : "Update Password"}
+              {isPending ? (
+                <CircularProgress
+                  className="!text-white group-hover:!text-indigo-600"
+                  sx={{
+                    scale: ".5",
+                  }}
+                />
+              ) : (
+                <>
+                  Update Password
+                  <Package size={15} />
+                </>
+              )}
             </button>
           </div>
         </form>

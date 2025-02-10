@@ -97,7 +97,7 @@ export default function Navbar() {
             <button
               onClick={handleSignOut}
               className={classNames(
-                "flex items-center space-x-1 text-gray-700 hover:text-indigo-600",
+                "flex items-center space-x-1 text-gray-700 hover:text-indigo-600 cursor-pointer",
                 {
                   "text-indigo-600": pathname === "",
                 },

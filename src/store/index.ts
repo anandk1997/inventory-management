@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import { TypedUseSelectorHook } from "react-redux";
 import { storeData } from "./reducers/sd";
+import { env } from "src/lib/env";
 
 const reducer = {
   storeData,
@@ -12,7 +13,10 @@ const reducer = {
 export const store = configureStore({
   reducer,
 
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
+  middleware: (getDefaultMiddleware) =>
+    env.NODE_ENV === "development"
+      ? getDefaultMiddleware().concat(logger)
+      : getDefaultMiddleware().concat(),
 });
 
 type AppState = ReturnType<typeof store.getState>;

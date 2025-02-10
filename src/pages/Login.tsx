@@ -6,6 +6,7 @@ import { storeUserData } from "src/store/reducers/sd";
 import { useDispatch } from "react-redux";
 import { supabase } from "src/lib/supabase";
 import { CircularProgress } from "@mui/material";
+import { FcGoogle } from "react-icons/fc";
 
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -56,7 +57,12 @@ export default function Login() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `http://localhost:3000/auth/callback`,
+        redirectTo: window.location.origin,
+
+        queryParams: {
+          prompt: "consent",
+          access_type: "offline",
+        },
       },
     });
   };
@@ -148,24 +154,29 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full h-10 flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="group relative w-full h-10 flex justify-center items-center gap-2 py-2 px-4 border border-transparent text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-white hover:!text-indigo-600 hover:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer"
             >
               {loading ? (
-                <CircularProgress sx={{ scale: ".5", color: "white" }} />
-              ) : isSignUp ? (
-                "Sign Up"
+                <CircularProgress
+                  className="!text-white group-hover:!text-indigo-600"
+                  sx={{ scale: ".5" }}
+                />
               ) : (
-                "Sign In"
+                <>
+                  {isSignUp ? "Sign Up" : "Sign In"}
+
+                  <Package size={15} />
+                </>
               )}
             </button>
           </div>
 
           <button
-            type="submit"
+            type="button"
             onClick={loginWithGoogle}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="group relative w-full flex justify-center items-center gap-2 py-2 px-4 border border-gray-600 text-sm font-medium rounded-full text-black bg-white hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer"
           >
-            Login With Google
+            {isSignUp ? "Sign Up" : "Sign In"} With Google <FcGoogle />
           </button>
 
           <div className="text-center">
@@ -176,7 +187,7 @@ export default function Login() {
                 setError("");
                 setSuccess("");
               }}
-              className="text-indigo-600 hover:text-indigo-500"
+              className="text-indigo-600 hover:text-indigo-500 cursor-pointer"
             >
               {isSignUp
                 ? "Already have an account? Sign in"
@@ -184,12 +195,15 @@ export default function Login() {
             </button>
           </div>
 
-          <NavLink
-            to={"/forgot"}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Forgot Password
-          </NavLink>
+          {!isSignUp && (
+            <NavLink
+              to={"/forgot"}
+              className="group relative w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent text-sm font-medium rounded-full text-white bg-black hover:bg-white hover:border-black hover:text-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Forgot Password
+              <Package size={15} />
+            </NavLink>
+          )}
         </form>
       </div>
     </div>

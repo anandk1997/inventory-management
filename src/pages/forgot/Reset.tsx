@@ -4,6 +4,8 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "src/lib/supabase";
 import classNames from "classnames";
+import bcrypt from "bcryptjs";
+import { CircularProgress } from "@mui/material";
 
 function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -17,6 +19,17 @@ function ResetPassword() {
     const { data, error } = await supabase.auth.updateUser({ password });
 
     if (error) throw new Error(error.message);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const { error: insertError } = await supabase
+      .from("users")
+      .update({
+        password: hashedPassword,
+      })
+      .eq("id", data?.user?.id);
+
+    if (insertError) throw new Error(insertError.message);
 
     return data;
   };
@@ -97,9 +110,21 @@ function ResetPassword() {
             <button
               type="submit"
               disabled={isPending}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="group relative w-full h-10 flex justify-center items-center gap-2 py-2 px-4 border border-transparent text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-white hover:!text-indigo-600 hover:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer"
             >
-              {isPending ? "Loading" : "Reset Password"}
+              {isPending ? (
+                <CircularProgress
+                  className="!text-white group-hover:!text-indigo-600"
+                  sx={{
+                    scale: ".5",
+                  }}
+                />
+              ) : (
+                <>
+                  Reset Password
+                  <Package size={15} />
+                </>
+              )}
             </button>
           </div>
 

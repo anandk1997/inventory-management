@@ -1,7 +1,9 @@
+import { CircularProgress } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { Package } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "src/hooks/useAuth";
 import { supabase } from "src/lib/supabase";
 
 function ForgotPassword() {
@@ -9,9 +11,15 @@ function ForgotPassword() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
+  const { getExistingUser } = useAuth();
+
   const forgot = async () => {
+    const { data: existingUser } = await getExistingUser(email);
+
+    if (!existingUser) throw new Error("User not found");
+
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "http://localhost:3000/reset-password",
+      redirectTo: window.location.origin + "/reset-password",
     });
 
     if (error) throw new Error(error.message);
@@ -20,12 +28,8 @@ function ForgotPassword() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: forgot,
-    onSuccess: () => {
-      setSuccess("Password reset email sent successfully.");
-    },
-    onError: (error: Error) => {
-      setError(`Error: ${error.message}`);
-    },
+    onSuccess: () => setSuccess("Password reset email sent successfully."),
+    onError: (error) => setError(error.message),
   });
 
   const handleSubmit = async (e: any) => {
@@ -86,9 +90,16 @@ function ForgotPassword() {
             <button
               type="submit"
               disabled={isPending}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="group h-10 relative w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {isPending ? "Loading" : "Forgot Password"}
+              {isPending ? (
+                <CircularProgress sx={{ scale: ".5", color: "white" }} />
+              ) : (
+                <>
+                  Forgot Password
+                  <Package size={15} />
+                </>
+              )}
             </button>
           </div>
 
