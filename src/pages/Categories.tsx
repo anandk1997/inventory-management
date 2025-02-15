@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { Folder, Edit, Trash2 } from "lucide-react";
 import AddEditCategoryModal from "../components/AddEditCategoryModal";
@@ -11,47 +12,49 @@ interface Category {
 }
 
 export default function Categories() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null,
   );
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  const fetchCategories = async (): Promise<Category[]> => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .order("name");
 
-  async function fetchCategories() {
-    try {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("*")
-        .order("name");
+    if (error) throw error;
+    return data || [];
+  };
 
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      setError("Failed to load categories");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const {
+    data: categories,
+    isPending,
+    isError,
+    error: queryError,
+  } = useQuery<Category[], Error>({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
+  });
 
-  async function handleDelete(id: string) {
-    if (!window.confirm("Are you sure you want to delete this category?"))
-      return;
-
-    try {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase.from("categories").delete().eq("id", id);
-
       if (error) throw error;
-      fetchCategories();
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      setError("Failed to delete category");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+    onError: (error) => {
+      setLocalError(error.message || "Failed to delete category");
+    },
+  });
+
+  function handleDelete(id: string) {
+    if (window.confirm("Are you sure you want to delete this category?")) {
+      deleteMutation.mutate(id);
     }
   }
 
@@ -65,7 +68,7 @@ export default function Categories() {
     setIsModalOpen(true);
   }
 
-  if (loading) {
+  if (isPending) {
     return (
       <div className="flex justify-center items-center h-64">Loading...</div>
     );
@@ -73,9 +76,11 @@ export default function Categories() {
 
   return (
     <div className="space-y-6">
-      {error && (
+      {(isError || localError) && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          <span className="block sm:inline">{error}</span>
+          <span className="block sm:inline">
+            {localError || (queryError as Error).message}
+          </span>
         </div>
       )}
 
@@ -90,7 +95,7 @@ export default function Categories() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map((category) => (
+        {categories?.map((category) => (
           <div key={category.id} className="bg-white rounded-lg shadow p-6">
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-3">
@@ -130,7 +135,9 @@ export default function Categories() {
           setSelectedCategory(null);
         }}
         category={selectedCategory || undefined}
-        onSave={fetchCategories}
+        onSave={() =>
+          queryClient.invalidateQueries({ queryKey: ["categories"] })
+        }
       />
     </div>
   );

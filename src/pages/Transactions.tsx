@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { ArrowUpRight, ArrowDownRight, Trash2 } from "lucide-react";
 import AddTransactionModal from "../components/AddTransactionModal";
@@ -9,64 +10,61 @@ interface Transaction {
   quantity: number;
   notes: string;
   created_at: string;
-  product: {
-    name: string;
-    sku: string;
-  };
+  product: { name: string; sku: string };
 }
 
 export default function Transactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
-
-  async function fetchTransactions() {
-    try {
+  const {
+    data: transactions,
+    isPending,
+    isError,
+    error: queryError,
+  } = useQuery<Transaction[], Error>({
+    queryKey: ["transactions"],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("inventory_transactions")
         .select(
           `
-          *,
-          product:products(name, sku)
-        `,
+        *,
+        product:products(name, sku)
+      `,
         )
         .order("created_at", { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setTransactions(data || []);
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-      setError("Failed to load transactions");
-    } finally {
-      setLoading(false);
-    }
-  }
+      return data || [];
+    },
+  });
 
-  async function handleDelete(id: string) {
-    if (!window.confirm("Are you sure you want to delete this transaction?"))
-      return;
-
-    try {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("inventory_transactions")
         .delete()
         .eq("id", id);
-
       if (error) throw error;
-      fetchTransactions();
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      setError("Failed to delete product");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    },
+    onError: (error) => {
+      setLocalError(error.message || "Failed to delete transaction");
+    },
+  });
+
+  function handleDelete(id: string) {
+    if (window.confirm("Are you sure you want to delete this transaction?")) {
+      deleteMutation.mutate(id);
     }
   }
 
-  if (loading) {
+  if (isPending) {
     return (
       <div className="flex justify-center items-center h-64">Loading...</div>
     );
@@ -74,9 +72,11 @@ export default function Transactions() {
 
   return (
     <div className="space-y-6">
-      {error && (
+      {(isError || localError) && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          <span className="block sm:inline">{error}</span>
+          <span className="block sm:inline">
+            {localError || (queryError as Error).message}
+          </span>
         </div>
       )}
 
@@ -112,7 +112,7 @@ export default function Transactions() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {transactions.map((transaction) => (
+            {transactions?.map((transaction) => (
               <tr key={transaction.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(transaction.created_at).toLocaleDateString()}
@@ -146,10 +146,9 @@ export default function Transactions() {
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500">
                   {transaction.notes}
-
                   <button
                     onClick={() => handleDelete(transaction.id)}
-                    className="text-red-600 hover:text-red-900"
+                    className="text-red-600 hover:text-red-900 ml-2"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -163,7 +162,9 @@ export default function Transactions() {
       <AddTransactionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={fetchTransactions}
+        onSave={() =>
+          queryClient.invalidateQueries({ queryKey: ["transactions"] })
+        }
       />
     </div>
   );

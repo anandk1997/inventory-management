@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { FormEvent, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "src/hooks/useAuth";
 import { Package } from "lucide-react";
@@ -7,6 +7,8 @@ import { useDispatch } from "react-redux";
 import { supabase } from "src/lib/supabase";
 import { CircularProgress } from "@mui/material";
 import { FcGoogle } from "react-icons/fc";
+import { useMutation } from "@tanstack/react-query";
+import { Session, User } from "@supabase/supabase-js";
 
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -15,13 +17,36 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
 
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  async function handleSubmit(e: React.FormEvent) {
+  const authMutation = useMutation({
+    mutationFn: async () => {
+      if (isSignUp) return await signUp(email, password);
+      else return await signIn(email, password);
+    },
+    onSuccess: (data) => {
+      if (isSignUp) {
+        setSuccess(
+          "Account created successfully! Please check your email for verification.",
+        );
+        setIsSignUp(false);
+      } else {
+        const signInData = data as { user: User; session: Session };
+
+        dispatch(storeUserData(signInData.user));
+        navigate("/");
+      }
+    },
+    onError: (err) => {
+      setError(err.message || "Failed to authenticate");
+      console.error("Auth error:", err);
+    },
+  });
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -31,26 +56,7 @@ export default function Login() {
       return;
     }
 
-    try {
-      setLoading(true);
-      if (isSignUp) {
-        await signUp(email, password);
-        setSuccess(
-          "Account created successfully! Please check your email for verification.",
-        );
-        setIsSignUp(false);
-      } else {
-        const { user } = await signIn(email, password);
-
-        dispatch(storeUserData(user));
-        navigate("/");
-      }
-    } catch (error: any) {
-      setError(error.message || "Failed to authenticate");
-      console.error("Auth error:", error);
-    } finally {
-      setLoading(false);
-    }
+    authMutation.mutate();
   }
 
   const loginWithGoogle = async () => {
@@ -58,11 +64,7 @@ export default function Login() {
       provider: "google",
       options: {
         redirectTo: window.location.origin,
-
-        queryParams: {
-          prompt: "consent",
-          access_type: "offline",
-        },
+        queryParams: { prompt: "consent", access_type: "offline" },
       },
     });
   };
@@ -153,10 +155,10 @@ export default function Login() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={authMutation.isPending}
               className="group relative w-full h-10 flex justify-center items-center gap-2 py-2 px-4 border border-transparent text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-white hover:!text-indigo-600 hover:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer"
             >
-              {loading ? (
+              {authMutation.isPending ? (
                 <CircularProgress
                   className="!text-white group-hover:!text-indigo-600"
                   sx={{ scale: ".5" }}

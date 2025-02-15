@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { Package, Edit, Trash2 } from "lucide-react";
 import AddEditProductModal from "../components/AddEditProductModal";
@@ -16,51 +17,45 @@ interface Product {
 }
 
 export default function Products() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const fetchProducts = async (): Promise<Product[]> => {
+    const { data, error } = await supabase
+      .from("products")
+      .select(`*, category:categories(name)`)
+      .order("name");
 
-  async function fetchProducts() {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .select(
-          `
-          *,
-          category:categories(name)
-        `,
-        )
-        .order("name");
+    if (error) throw error;
 
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      setError("Failed to load products");
-    } finally {
-      setLoading(false);
-    }
-  }
+    return data || [];
+  };
 
-  async function handleDelete(id: string) {
-    if (!window.confirm("Are you sure you want to delete this product?"))
-      return;
+  const {
+    data: products,
+    isPending,
+    isError,
+    error: queryError,
+  } = useQuery<Product[], Error>({
+    queryKey: ["products"],
+    queryFn: fetchProducts,
+  });
 
-    try {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase.from("products").delete().eq("id", id);
 
       if (error) throw error;
-      fetchProducts();
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      setError("Failed to delete product");
-    }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+  });
+
+  function handleDelete(id: string) {
+    if (!window.confirm("Are you sure you want to delete this product?"))
+      return;
+
+    deleteMutation.mutate(id);
   }
 
   function handleEdit(product: Product) {
@@ -73,7 +68,7 @@ export default function Products() {
     setIsModalOpen(true);
   }
 
-  if (loading) {
+  if (isPending) {
     return (
       <div className="flex justify-center items-center h-64">Loading...</div>
     );
@@ -81,9 +76,11 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
-      {error && (
+      {isError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          <span className="block sm:inline">{error}</span>
+          <span className="block sm:inline">
+            {queryError?.message || "Failed to load products"}
+          </span>
         </div>
       )}
 
@@ -122,7 +119,7 @@ export default function Products() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {products.map((product) => (
+            {products?.map((product) => (
               <tr key={product.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -150,7 +147,7 @@ export default function Products() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ${product.unit_price.toFixed(2)}
+                  ${product.unit_price?.toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
@@ -179,7 +176,7 @@ export default function Products() {
           setSelectedProduct(null);
         }}
         product={selectedProduct!}
-        onSave={fetchProducts}
+        onSave={() => queryClient.invalidateQueries({ queryKey: ["products"] })}
       />
     </div>
   );

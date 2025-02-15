@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import { initialState } from "../initialState";
 
 const storeSlice = createSlice({
@@ -6,7 +6,7 @@ const storeSlice = createSlice({
   initialState,
 
   reducers: {
-    storeUserData(state, action: PayloadAction<any>) {
+    storeUserData(state, action) {
       state.user = action.payload;
     },
   },

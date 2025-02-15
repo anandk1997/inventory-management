@@ -1,7 +1,7 @@
 import { CircularProgress } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { Package } from "lucide-react";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "src/hooks/useAuth";
 import { supabase } from "src/lib/supabase";
@@ -32,7 +32,7 @@ function ForgotPassword() {
     onError: (error) => setError(error.message),
   });
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     mutate();

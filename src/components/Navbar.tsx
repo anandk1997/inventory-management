@@ -17,6 +17,8 @@ export default function Navbar() {
     navigate("/login");
   };
 
+  const active = (path: string) => ({ "text-indigo-600": pathname === path });
+
   if (!user) return null;
 
   return (
@@ -34,9 +36,7 @@ export default function Navbar() {
                 to="/"
                 className={classNames(
                   "flex items-center space-x-1 text-gray-700 hover:text-indigo-600",
-                  {
-                    "text-indigo-600": pathname === "/",
-                  },
+                  active("/"),
                 )}
               >
                 <LayoutDashboard className="h-5 w-5" />
@@ -46,9 +46,7 @@ export default function Navbar() {
                 to="/products"
                 className={classNames(
                   "flex items-center space-x-1 text-gray-700 hover:text-indigo-600",
-                  {
-                    "text-indigo-600": pathname === "/products",
-                  },
+                  active("/products"),
                 )}
               >
                 <Package className="h-5 w-5" />
@@ -58,9 +56,7 @@ export default function Navbar() {
                 to="/categories"
                 className={classNames(
                   "flex items-center space-x-1 text-gray-700 hover:text-indigo-600",
-                  {
-                    "text-indigo-600": pathname === "/categories",
-                  },
+                  active("/categories"),
                 )}
               >
                 <List className="h-5 w-5" />
@@ -70,9 +66,7 @@ export default function Navbar() {
                 to="/transactions"
                 className={classNames(
                   "flex items-center space-x-1 text-gray-700 hover:text-indigo-600",
-                  {
-                    "text-indigo-600": pathname === "/transactions",
-                  },
+                  active("/transactions"),
                 )}
               >
                 <History className="h-5 w-5" />
@@ -82,9 +76,7 @@ export default function Navbar() {
                 to="/change-password"
                 className={classNames(
                   "flex items-center space-x-1 text-gray-700 hover:text-indigo-600",
-                  {
-                    "text-indigo-600": pathname === "/change-password",
-                  },
+                  active("/change-password"),
                 )}
               >
                 <History className="h-5 w-5" />
@@ -98,9 +90,6 @@ export default function Navbar() {
               onClick={handleSignOut}
               className={classNames(
                 "flex items-center space-x-1 text-gray-700 hover:text-indigo-600 cursor-pointer",
-                {
-                  "text-indigo-600": pathname === "",
-                },
               )}
             >
               <LogOut className="h-5 w-5" />

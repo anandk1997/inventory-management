@@ -1,7 +1,7 @@
 import { supabase } from "src/lib/supabase";
 import { useMutation } from "@tanstack/react-query";
 import { Package } from "lucide-react";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import classNames from "classnames";
 import { useAppSelector } from "src/store";
 import { CircularProgress } from "@mui/material";
@@ -44,7 +44,7 @@ const ChangePassword = () => {
     onError: (error: Error) => setError(`Error: ${error.message}`),
   });
 
-  async function changePassword(e: any) {
+  async function changePassword(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (password !== rePassword)

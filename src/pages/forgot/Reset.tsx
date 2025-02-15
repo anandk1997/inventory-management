@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Package } from "lucide-react";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "src/lib/supabase";
 import classNames from "classnames";
@@ -24,9 +24,7 @@ function ResetPassword() {
 
     const { error: insertError } = await supabase
       .from("users")
-      .update({
-        password: hashedPassword,
-      })
+      .update({ password: hashedPassword })
       .eq("id", data?.user?.id);
 
     if (insertError) throw new Error(insertError.message);
@@ -40,7 +38,7 @@ function ResetPassword() {
     onError: (error: Error) => setError(`Error: ${error.message}`),
   });
 
-  const updatePassword = async (e: any) => {
+  const updatePassword = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (password !== rePassword)
@@ -115,9 +113,7 @@ function ResetPassword() {
               {isPending ? (
                 <CircularProgress
                   className="!text-white group-hover:!text-indigo-600"
-                  sx={{
-                    scale: ".5",
-                  }}
+                  sx={{ scale: ".5" }}
                 />
               ) : (
                 <>

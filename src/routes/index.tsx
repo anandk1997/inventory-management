@@ -6,6 +6,7 @@ import { lazy } from "react";
 
 import { PublicContext } from "src/context/PublicContext";
 import AuthCallback from "src/pages/Callback";
+import { NotFound } from "src/components/NotFound";
 
 const Dashboard = lazy(() => import("src/pages/Dashboard"));
 const Products = lazy(() => import("src/pages/Products"));
@@ -22,26 +23,12 @@ export const router = createBrowserRouter([
     path: "/",
     element: <AuthProvider />,
     children: [
-      {
-        index: true,
-        element: <Dashboard />,
-      },
-      {
-        path: "products",
-        element: <Products />,
-      },
-      {
-        path: "categories",
-        element: <Categories />,
-      },
-      {
-        path: "transactions",
-        element: <Transactions />,
-      },
-      {
-        path: "change-password",
-        element: <ChangePassword />,
-      },
+      { index: true, element: <Dashboard /> },
+      { path: "products", element: <Products /> },
+      { path: "categories", element: <Categories /> },
+      { path: "transactions", element: <Transactions /> },
+      { path: "change-password", element: <ChangePassword /> },
+      { path: "*", element: <NotFound /> },
     ],
   },
 
@@ -49,22 +36,11 @@ export const router = createBrowserRouter([
     path: "/",
     element: <PublicContext />,
     children: [
-      {
-        path: "login",
-        element: <Login />,
-      },
-      {
-        path: "forgot",
-        element: <ForgotPassword />,
-      },
-      {
-        path: "reset-password",
-        element: <ResetPassword />,
-      },
-      {
-        path: "auth/callback",
-        element: <AuthCallback />,
-      },
+      { path: "login", element: <Login /> },
+      { path: "forgot", element: <ForgotPassword /> },
+      { path: "reset-password", element: <ResetPassword /> },
+      { path: "auth/callback", element: <AuthCallback /> },
+      { path: "*", element: <NotFound /> },
     ],
   },
 ]);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { useMutation } from "@tanstack/react-query";
 
 interface Category {
   id?: string;
@@ -25,42 +26,38 @@ export default function AddEditCategoryModal({
     name: "",
     description: "",
   });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (category) {
       setFormData(category);
+    } else {
+      setFormData({ name: "", description: "" });
     }
   }, [category]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
+  const mutation = useMutation({
+    mutationFn: async (data: Category) => {
       if (category?.id) {
         const { error } = await supabase
           .from("categories")
-          .update(formData)
+          .update(data)
           .eq("id", category.id);
-
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("categories").insert([formData]);
-
+        const { error } = await supabase.from("categories").insert([data]);
         if (error) throw error;
       }
-
+    },
+    onSuccess: () => {
       onSave();
       onClose();
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    mutation.mutate(formData);
+  };
 
   if (!isOpen) return null;
 
@@ -79,9 +76,11 @@ export default function AddEditCategoryModal({
           </button>
         </div>
 
-        {error && (
+        {mutation.error && (
           <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            <span className="block sm:inline">{error}</span>
+            <span className="block sm:inline">
+              {(mutation.error as Error).message}
+            </span>
           </div>
         )}
 
@@ -125,10 +124,10 @@ export default function AddEditCategoryModal({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={mutation.isPending}
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {loading ? "Saving..." : "Save"}
+              {mutation.isPending ? "Saving..." : "Save"}
             </button>
           </div>
         </form>

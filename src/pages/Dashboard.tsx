@@ -1,55 +1,57 @@
-import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { AlertTriangle, Package, History } from "lucide-react";
-
-interface DashboardStats {
-  totalProducts: number;
-  lowStockItems: number;
-  recentTransactions: number;
-}
+import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalProducts: 0,
-    lowStockItems: 0,
-    recentTransactions: 0,
+  const getProducts = async () => {
+    const { count: totalProducts, error } = await supabase
+      .from("products")
+      .select("*", { count: "exact", head: true });
+
+    if (error) throw new Error(error.message);
+
+    return totalProducts;
+  };
+
+  const { data: totalProducts } = useQuery({
+    queryKey: ["totalProducts"],
+    queryFn: getProducts,
   });
 
-  useEffect(() => {
-    async function fetchDashboardStats() {
-      try {
-        // Get total products
-        const { count: totalProducts } = await supabase
-          .from("products")
-          .select("*", { count: "exact", head: true });
+  const getLowStocks = async () => {
+    const { count: lowStockItems, error } = await supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .lt("quantity", 5);
 
-        // Get low stock items
-        const { count: lowStockItems } = await supabase
-          .from("products")
-          .select("*", { count: "exact", head: true })
-          .lt("quantity", "min_quantity");
+    if (error) throw new Error(error.message);
 
-        // Get recent transactions count (last 24 hours)
-        const { count: recentTransactions } = await supabase
-          .from("inventory_transactions")
-          .select("*", { count: "exact", head: true })
-          .gte(
-            "created_at",
-            new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          );
+    return lowStockItems;
+  };
 
-        setStats({
-          totalProducts: totalProducts || 0,
-          lowStockItems: lowStockItems || 0,
-          recentTransactions: recentTransactions || 0,
-        });
-      } catch (error) {
-        console.error("Error fetching dashboard stats:", error);
-      }
-    }
+  const { data: lowStockItems } = useQuery({
+    queryKey: ["lowStockItems"],
+    queryFn: getLowStocks,
+  });
 
-    fetchDashboardStats();
-  }, []);
+  const getRecentTransactions = async () => {
+    const { count: recentTransactions, error } = await supabase
+      .from("inventory_transactions")
+      .select("*", { count: "exact", head: true })
+      .gte(
+        "created_at",
+        new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      );
+
+    if (error) throw new Error(error.message);
+
+    return recentTransactions;
+  };
+
+  const { data: recentTransactions } = useQuery({
+    queryKey: ["recentTransactions"],
+    queryFn: getRecentTransactions,
+  });
 
   return (
     <div className="space-y-6">
@@ -64,7 +66,7 @@ export default function Dashboard() {
                 Total Products
               </p>
               <p className="text-2xl font-semibold text-gray-900">
-                {stats.totalProducts}
+                {totalProducts}
               </p>
             </div>
             <Package className="h-8 w-8 text-indigo-600" />
@@ -79,7 +81,7 @@ export default function Dashboard() {
                 Low Stock Items
               </p>
               <p className="text-2xl font-semibold text-red-600">
-                {stats.lowStockItems}
+                {lowStockItems}
               </p>
             </div>
             <AlertTriangle className="h-8 w-8 text-red-600" />
@@ -94,7 +96,7 @@ export default function Dashboard() {
                 24h Transactions
               </p>
               <p className="text-2xl font-semibold text-gray-900">
-                {stats.recentTransactions}
+                {recentTransactions}
               </p>
             </div>
             <History className="h-8 w-8 text-indigo-600" />
