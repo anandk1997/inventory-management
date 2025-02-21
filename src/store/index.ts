@@ -1,23 +1,50 @@
 import logger from "redux-logger";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
-import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { TypedUseSelectorHook } from "react-redux";
 import { storeData } from "./reducers/sd";
 import { env } from "src/lib/env";
+import { persistReducer, persistStore } from "redux-persist";
 
-const reducer = {
-  storeData,
+import storage from "redux-persist/lib/storage";
+import {
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
+
+const persistConfig = {
+  key: "root",
+  storage,
+  whitelist: ["storeData"],
 };
 
+const reducer = combineReducers({
+  storeData,
+});
+
+const serialize = {
+  serializableCheck: {
+    ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+  },
+};
+
+const persistedReducer = persistReducer(persistConfig, reducer);
+
 export const store = configureStore({
-  reducer,
+  reducer: persistedReducer,
 
   middleware: (getDefaultMiddleware) =>
     env.NODE_ENV === "development"
-      ? getDefaultMiddleware().concat(logger)
-      : getDefaultMiddleware().concat(),
+      ? getDefaultMiddleware(serialize).concat(logger)
+      : getDefaultMiddleware(serialize),
 });
+
+export const persistor = persistStore(store);
 
 type AppState = ReturnType<typeof store.getState>;
 type AppDispatch = typeof store.dispatch;
